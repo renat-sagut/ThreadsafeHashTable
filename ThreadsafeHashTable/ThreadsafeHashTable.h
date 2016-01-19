@@ -367,19 +367,23 @@ private:
          return false;
       TUniqueLockGuard rehash_lock( mRehashLock, std::adopt_lock );
 
-      auto const bucketCount = mBuckets.size();
-      auto const newBucketCount = bucketCount * 2;
-      Rehash( newBucketCount );
-
+      Rehash();
       return true;
    }
 
-   void Rehash( size_t const bucketCount )
+   void Rehash( size_t const size = 0 )
    {
+      std::vector<std::shared_ptr<TUniqueLockGuard>> lockGuards;
       for ( auto lock_it = mLocks.begin(); lock_it != mLocks.end(); ++lock_it )
       {
-         lock_it->lock();
+         lockGuards.push_back( std::make_shared<TUniqueLockGuard>( *lock_it ) );
       }
+      
+      size_t bucketCount;
+      if ( size == 0 )
+         bucketCount = mBuckets.size() * 2;
+      else
+         bucketCount = size;
 
       TBucketContainer oldBuckets = std::move( mBuckets );
       mBuckets.resize( bucketCount );
@@ -393,11 +397,6 @@ private:
 
             GetBucket( key ).Insert( key, value );
          }
-      }
-
-      for ( auto lock_it = mLocks.rbegin(); lock_it != mLocks.rend(); ++lock_it )
-      {
-         lock_it->unlock();
       }
    }
 
