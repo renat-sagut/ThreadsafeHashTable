@@ -373,10 +373,9 @@ private:
 
    void Rehash( size_t const size = 0 )
    {
-      std::vector<std::shared_ptr<TUniqueLockGuard>> lockGuards;
       for ( auto lock_it = mLocks.begin(); lock_it != mLocks.end(); ++lock_it )
       {
-         lockGuards.push_back( std::make_shared<TUniqueLockGuard>( *lock_it ) );
+         lock_it->lock();
       }
       
       size_t bucketCount;
@@ -397,6 +396,11 @@ private:
 
             GetBucket( key ).Insert( key, value );
          }
+      }
+
+      for ( auto lock_it = mLocks.rbegin(); lock_it != mLocks.rend(); ++lock_it )
+      {
+         lock_it->unlock();
       }
    }
 
