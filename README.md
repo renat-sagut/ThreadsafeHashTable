@@ -26,7 +26,8 @@ this is a bad idea
 - Потоков на обновление - 2
 - Потоков на вставку - 4
 - Количество итераций - 1000 000
-- Время выполнения - 0.85 сек для SlimReaderWriterLock, 1.22 сек для boost::shared_mutex, 4.86 сек для std::mutex
+- Время выполнения, 11 блокировок - 0.85 сек для SlimReaderWriterLock, 1.22 сек для boost::shared_mutex, 4.86 сек для std::mutex
+- Время выполнения, 256 блокировок - 0.54 сек для SlimReaderWriterLock, 0.58 сек для boost::shared_mutex, 0.70 сек для std::mutex
 - Время выполнения тех же операций в одном потоке для std::map - 2.83 сек
 
 #### Полезные ссылки по теме
