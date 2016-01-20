@@ -359,12 +359,18 @@ public:
       return false;
    }
 
-   void Reserve( size_t const bucketCount )
+   void Reserve( size_t const size )
    {
-      if ( bucketCount <= mBuckets.size() )
+      if ( size <= mBuckets.size() )
          return;
 
       TUniqueLockGuard rehashLock( mRehashLock );
+      auto bucketCount = mBuckets.size();
+      while ( bucketCount < size )
+      {
+         bucketCount *= 2;
+      }
+
       Rehash( bucketCount );
    }
 
@@ -390,6 +396,9 @@ private:
       if ( !mRehashLock.try_lock() )
          return false;
       TUniqueLockGuard rehash_lock( mRehashLock, std::adopt_lock );
+
+      if( !NeedRehash() )
+         return false;
 
       Rehash();
       return true;
