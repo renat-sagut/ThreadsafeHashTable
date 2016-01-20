@@ -44,7 +44,7 @@ double TRI_microtime ()
    return ( t.tv_sec ) + ( t.tv_usec / 1000000.0 );
 }
 
-size_t const lock_count = 11;
+size_t const lock_count = 256;
 
 long const distrib_min = 0;
 long const distrib_max = 1000000;
@@ -245,6 +245,11 @@ int main()
 
    tic_start = TRI_microtime();
 
+   for ( size_t i = 0; i < inserter_count; ++i )
+   {
+      InsertSerial( serial_map, iter_count );
+   }
+
    for ( size_t i = 0; i < reader_count; ++i )
    {
       ReadSerial( serial_map, iter_count );
@@ -253,11 +258,6 @@ int main()
    for ( size_t i = 0; i < updater_count; ++i )
    {
       UpdateSerial( serial_map, iter_count );
-   }
-
-   for ( size_t i = 0; i < inserter_count; ++i )
-   {
-      InsertSerial( serial_map, iter_count );
    }
 
    std::cout

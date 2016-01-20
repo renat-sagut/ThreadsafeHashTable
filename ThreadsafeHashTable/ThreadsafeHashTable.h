@@ -292,27 +292,43 @@ public:
    template<typename Function>
    void ForEach( Function f )
    {
-      TSharedLockGuard rehashLock( mRehashLock );
+      for ( auto lock_it = mLocks.begin(); lock_it != mLocks.end(); ++lock_it )
+      {
+         lock_it->lock_shared();
+      }
+
       for ( auto buc_it = mBuckets.begin(), end_it = mBuckets.end(); buc_it != end_it; ++buc_it )
       {
          auto const idx = std::distance( mBuckets.begin(), buc_it );
-         TUniqueLockGuard bucketLock( GetLockForBucket( idx ) );
          buc_it->ForEach( f );
+      }
+
+      for ( auto lock_it = mLocks.rbegin(); lock_it != mLocks.rend(); ++lock_it )
+      {
+         lock_it->unlock_shared();
       }
    }
 
    template<typename Predicate>
    bool FindFirstIf( Predicate p, TKeyValue& found )
    {
-      TSharedLockGuard rehashLock( mRehashLock );
+      for ( auto lock_it = mLocks.begin(); lock_it != mLocks.end(); ++lock_it )
+      {
+         lock_it->lock_shared();
+      }
+
       for ( auto buc_it = mBuckets.begin(), end_it = mBuckets.end(); buc_it != end_it; ++buc_it )
       {
          auto const idx = std::distance( mBuckets.begin(), buc_it );
-         TSharedLockGuard bucketLock( GetLockForBucket( idx ) );
          if ( buc_it->FindFirstIf( p, found ) )
          {
             return true;
          }
+      }
+
+      for ( auto lock_it = mLocks.rbegin(); lock_it != mLocks.rend(); ++lock_it )
+      {
+         lock_it->unlock_shared();
       }
 
       return false;
@@ -321,15 +337,23 @@ public:
    template<typename Predicate>
    bool EraseIf( Predicate p )
    {
-      TSharedLockGuard rehashLock( mRehashLock );
+      for ( auto lock_it = mLocks.begin(); lock_it != mLocks.end(); ++lock_it )
+      {
+         lock_it->lock_shared();
+      }
+
       for ( auto buc_it = mBuckets.begin(), end_it = mBuckets.end(); buc_it != end_it; ++buc_it )
       {
          auto const idx = std::distance( mBuckets.begin(), buc_it );
-         TUniqueLockGuard bucketLock( GetLockForBucket( idx ) );
          if ( buc_it->EraseIf( p ) )
          {
             return true;
          }
+      }
+
+      for ( auto lock_it = mLocks.rbegin(); lock_it != mLocks.rend(); ++lock_it )
+      {
+         lock_it->unlock_shared();
       }
 
       return false;
@@ -404,15 +428,10 @@ private:
       }
    }
 
-   TLock& GetLockForBucket( size_t const buc_idx )
-   {
-      auto const idx = buc_idx % mLocks.size();
-      return mLocks[idx];
-   }
-
    TLock& GetLockForKey( TKey const& key )
    {
-      return GetLockForBucket( GetBucketIndex( key ) );
+      auto idx = mHasher( key ) % mLocks.size();
+      return mLocks[idx];
    }
 
    size_t GetBucketIndex( TKey const& key )
